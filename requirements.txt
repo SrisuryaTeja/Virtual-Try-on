@@ -2,3 +2,5 @@ flask
 twilio
 pyngrok
 python-dotenv
+gunicorn
+requests
