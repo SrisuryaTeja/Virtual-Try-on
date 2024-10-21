@@ -1,5 +1,5 @@
 from flask import Flask,request,jsonify
-from twilio.rest import client
+from twilio.rest import Client
 import requests
 import os
 
@@ -34,7 +34,7 @@ def send_response(user_id,image_url):
     else :
         message_body=f"Try-on failed.Please try again "
     
-    message=client.messages.create(
+    message=Client.messages.create(
         body=message_body,
         from_=TWILIO_WHATSAPP_NUMBER,
         to=f'Whatsapp:{user_id}'
