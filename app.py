@@ -59,6 +59,4 @@ def send_response(user_id,image_url):
     print(message.sid)
 
 if __name__=='__main__':
-    image_url="https://th.bing.com/th/id/OIP.tku69jTu8T8LW2ajk0pHWQHaLH?w=202&h=303&c=7&r=0&o=5&dpr=1.5&pid=1.7"
-    send_response(TO_NUMBER,image_url)
-    # app.run(debug=True)
+    app.run(debug=True)
