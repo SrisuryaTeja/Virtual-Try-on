@@ -4,3 +4,4 @@ pyngrok
 python-dotenv
 gunicorn
 requests
+gradio_client

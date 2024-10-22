@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from twilio.twiml.messaging_response import MessagingResponse
 from dotenv import load_dotenv
 from twilio.rest import Client
-import requests
+from gradio_client import Client as GradioClient, handle_file
 import os
 
 load_dotenv()
@@ -13,10 +13,10 @@ TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
 TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
 TWILIO_WHATSAPP_NUMBER = os.getenv('TWILIO_WHATSAPP_NUMBER')
 
-
 client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
 user_state = {}
+gradio_client = GradioClient("Nymbo/Virtual-Try-On")
 
 @app.route('/receive', methods=['POST'])
 def receive_images():
@@ -52,11 +52,20 @@ def receive_images():
             return jsonify({"status": "Failed to generate try-on result"})
 
 def Hfapi(person_image, dress_image):
-    url = "https://huggingface.co/spaces/Kwai-Kolors/Kolors-Virtual-Try-On"
-    response = requests.post(url, json={'person_image': person_image, 'dress_image': dress_image})
-    if response.status_code == 200:
-        return response.json().get('result_image')
-    else:
+    try:
+        result = gradio_client.predict(
+            dict={"background": handle_file(person_image), "layers": [], "composite": None},
+            garm_img=handle_file(dress_image),
+            garment_des="Generated with AI",
+            is_checked=True,
+            is_checked_crop=False,
+            denoise_steps=30,
+            seed=42,
+            api_name="/tryon"
+        )
+        return result
+    except Exception as e:
+        print(f"Error calling Gradio API: {e}")
         return None
 
 def send_response(user_id, image_url):
@@ -69,3 +78,4 @@ def send_response(user_id, image_url):
 
 if __name__ == '__main__':
     app.run(debug=True)
+
