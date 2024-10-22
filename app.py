@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from twilio.rest import Client
 from gradio_client import Client as GradioClient, handle_file
 import os
+from io import BytesIO
 
 load_dotenv()
 
@@ -78,10 +79,14 @@ def Hfapi(person_image, dress_image):
             seed=42,
             api_name="/tryon"
         )
-        return result
+        output_image_path = result[0]  
+        masked_image_path = result[1]
+        return output_image_path
     except Exception as e:
         print(f"Error calling Gradio API: {e}")
         return None
+
+
 
 def send_response(user_id, image_url):
     message = client.messages.create(
