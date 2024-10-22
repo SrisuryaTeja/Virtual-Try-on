@@ -1,3 +1,4 @@
+import requests
 from flask import Flask, request, jsonify
 from twilio.twiml.messaging_response import MessagingResponse
 from dotenv import load_dotenv
@@ -17,6 +18,14 @@ client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
 user_state = {}
 gradio_client = GradioClient("Nymbo/Virtual-Try-On")
+
+def download_image(url, filename):
+    response = requests.get(url)
+    if response.status_code == 200:
+        with open(filename, 'wb') as f:
+            f.write(response.content)
+        return filename
+    return None
 
 @app.route('/receive', methods=['POST'])
 def receive_images():
@@ -39,17 +48,23 @@ def receive_images():
         return str(response)
     elif not user_state[user_id]["dress_image"]:
         user_state[user_id]["dress_image"] = request.values.get('MediaUrl0')
-        person_image = user_state[user_id]["person_image"]
-        dress_image = user_state[user_id]["dress_image"]
-        
-        result = Hfapi(person_image, dress_image)
+        person_image_url = user_state[user_id]["person_image"]
+        dress_image_url = user_state[user_id]["dress_image"]
 
-        if result:
-            send_response(user_id, result)
-            user_state[user_id] = {"person_image": None, "dress_image": None}
-            return jsonify({"status": "Success"})
+        person_image = download_image(person_image_url, 'person_image.jpg')
+        dress_image = download_image(dress_image_url, 'dress_image.jpg')
+
+        if person_image and dress_image:
+            result = Hfapi(person_image, dress_image)
+
+            if result:
+                send_response(user_id, result)
+                user_state[user_id] = {"person_image": None, "dress_image": None}
+                return jsonify({"status": "Success"})
+            else:
+                return jsonify({"status": "Failed to generate try-on result"})
         else:
-            return jsonify({"status": "Failed to generate try-on result"})
+            return jsonify({"status": "Failed to download images"})
 
 def Hfapi(person_image, dress_image):
     try:
@@ -78,4 +93,3 @@ def send_response(user_id, image_url):
 
 if __name__ == '__main__':
     app.run(debug=True)
-
