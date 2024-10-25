@@ -1,11 +1,15 @@
 import os
+import requests
+import cloudinary
+import cloudinary.uploader
+from cloudinary.utils import cloudinary_url
 from io import BytesIO
 from flask import Flask, request, jsonify, send_file, url_for
 from twilio.twiml.messaging_response import MessagingResponse
 from twilio.rest import Client
 from gradio_client import Client as GradioClient, handle_file
 from dotenv import load_dotenv
-import requests
+
 
 load_dotenv()
 
@@ -14,6 +18,9 @@ app = Flask(__name__)
 TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
 TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
 TWILIO_WHATSAPP_NUMBER = os.getenv('TWILIO_WHATSAPP_NUMBER')
+CLOUDINARY_CLOUD_NAME=os.getenv('CLOUDINARY_CLOUD_NAME')
+CLOUDINARY_API_KEY=os.getenv('CLOUDINARY_API_KEY')
+CLOUDINARY_API_SECRET=os.getenv('CLOUDINARY_API_SECRET')
 
 client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
@@ -51,9 +58,7 @@ def receive_images():
             tryon_result = Hfapi(person_image, dress_image)
 
             if tryon_result:
-                image_store[user_id] = tryon_result
-                image_url = url_for('serve_image', user_id=user_id, _external=True)
-                send_response(user_id, image_url)
+                send_response(user_id,tryon_result)
                 user_state[user_id] = {"person_image": None, "dress_image": None}
                 return jsonify({"status": "Success"})
             else:
@@ -80,7 +85,9 @@ def Hfapi(person_image, dress_image):
             api_name="/tryon"
         )
         output_image = result[0]  
-        return output_image
+        upload_result=cloudinary.uploader.upload(output_image)
+        res_url=upload_result.get("secure_url")
+        return res_url
     except Exception as e:
         print(f"Error calling Gradio API: {e}")
         return None
